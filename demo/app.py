@@ -282,14 +282,14 @@ def stage1_run(models, device, cam_vis, tmp_dir,
     stage1_dir = os.path.join(tmp_dir, "stage1_8")
     if not is_rerun:
         os.makedirs(stage1_dir, exist_ok=True)
-        output_ims = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(4)), device=device, ddim_steps=ddim_steps, scale=scale)
-        stage2_steps = 50 # ddim_steps
-        zero123_infer(model, tmp_dir, indices=[0], device=device, ddim_steps=stage2_steps, scale=scale)
         try:
             elev_output = int(estimate_elev(tmp_dir))
         except:
             print("Failed to estimate polar angle")
             elev_output = 90
+        output_ims = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(4)), device=device, ddim_steps=ddim_steps, scale=scale, elevation = elev_output)
+        stage2_steps = 50 # ddim_steps
+        zero123_infer(model, tmp_dir, indices=[0], device=device, ddim_steps=stage2_steps, scale=scale)
         print("Estimated polar angle:", elev_output)
         gen_poses(tmp_dir, elev_output)
         show_in_im1 = np.asarray(input_im, dtype=np.uint8)
@@ -298,7 +298,7 @@ def stage1_run(models, device, cam_vis, tmp_dir,
 
         flag_lower_cam = elev_output <= 75
         # if flag_lower_cam:
-        output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(4,8)), device=device, ddim_steps=ddim_steps, scale=scale)
+        output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(4,8)), device=device, ddim_steps=ddim_steps, scale=scale, elevation = elev_output)
         # else:
             # output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(8,12)), device=device, ddim_steps=ddim_steps, scale=scale)
         torch.cuda.empty_cache()
