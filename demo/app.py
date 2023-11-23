@@ -442,10 +442,16 @@ def gen_8_views_api(models, predictor, device,
                input_im, preprocess=True, scale=3, ddim_steps=75, stage2_steps=50):
     if preprocess:
         input_im.thumbnail([512, 512], Image.Resampling.LANCZOS)
-        # check_results = nsfw_check(models, raw_im, device=predictor.device)
-        # if check_results:
-        #     return check_results
-        image_sam = sam_out_nosave(predictor, input_im.convert("RGB"))
+        image_rem = input_im.convert('RGBA')
+        image_nobg = remove(image_rem, alpha_matting=True)
+        arr = np.asarray(image_nobg)[:,:,-1]
+        x_nonzero = np.nonzero(arr.sum(axis=0))
+        y_nonzero = np.nonzero(arr.sum(axis=1))
+        x_min = int(x_nonzero[0].min())
+        y_min = int(y_nonzero[0].min())
+        x_max = int(x_nonzero[0].max())
+        y_max = int(y_nonzero[0].max())
+        image_sam = sam_out_nosave(predictor, input_im.convert("RGB"), x_min, y_min, x_max, y_max)
         input_256 = image_preprocess_nosave(image_sam, lower_contrast=False, rescale=True)
         torch.cuda.empty_cache()
     model = models['turncam'].half()
