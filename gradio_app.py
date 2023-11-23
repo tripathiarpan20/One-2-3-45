@@ -3,18 +3,16 @@
 import os, sys
 import subprocess
 
-is_local_run = False
+# is_local_run = False
 
 
-
-
-if not is_local_run:
+# if not is_local_run:
     # export TORCH_CUDA_ARCH_LIST="7.0;7.2;8.0;8.6"
     # export IABN_FORCE_CUDA=1
-    os.environ["TORCH_CUDA_ARCH_LIST"] = "8.0;8.6"
-    os.environ["IABN_FORCE_CUDA"] = "1"
-    os.environ["FORCE_CUDA"] = "1"
-    subprocess.run(['pip', 'install', 'inplace_abn'])
+    # os.environ["TORCH_CUDA_ARCH_LIST"] = "8.0;8.6"
+    # os.environ["IABN_FORCE_CUDA"] = "1"
+    # os.environ["FORCE_CUDA"] = "1"
+    # subprocess.run(['pip', 'install', 'inplace_abn'])
     # FORCE_CUDA=1 pip install --no-cache-dir git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0
     # subprocess.run(['pip', 'install', '--no-cache-dir', 'git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0'])
 
@@ -498,27 +496,27 @@ def convert_mesh_format(exp_dir, output_format=".obj"):
         mesh.export(mesh_path, file_type='glb')
     return mesh_path
     
-def reconstruct(exp_dir, output_format=".ply", device_idx=0):
+# def reconstruct(exp_dir, output_format=".ply", device_idx=0):
 
-    main_dir_path = os.path.dirname(__file__)
-    torch.cuda.empty_cache()
-    os.chdir(os.path.join(code_dir, 'SparseNeuS_demo_v1/'))
+#     main_dir_path = os.path.dirname(__file__)
+#     torch.cuda.empty_cache()
+#     os.chdir(os.path.join(code_dir, 'SparseNeuS_demo_v1/'))
 
-    bash_script = f'CUDA_VISIBLE_DEVICES={device_idx} python exp_runner_generic_blender_val.py \
-                    --specific_dataset_name {exp_dir} \
-                    --mode export_mesh \
-                    --conf confs/one2345_lod0_val_demo.conf'
-    print(bash_script)
-    os.system(bash_script)
-    os.chdir(main_dir_path)
+#     bash_script = f'CUDA_VISIBLE_DEVICES={device_idx} python exp_runner_generic_blender_val.py \
+#                     --specific_dataset_name {exp_dir} \
+#                     --mode export_mesh \
+#                     --conf confs/one2345_lod0_val_demo.conf'
+#     print(bash_script)
+#     os.system(bash_script)
+#     os.chdir(main_dir_path)
 
-    ply_path = os.path.join(exp_dir, f"meshes_val_bg/lod0/mesh_00215000_gradio_lod0.ply")
-    if output_format == ".ply":
-        return ply_path
-    if output_format not in [".obj", ".glb"]:
-        print("Invalid output format, must be one of .ply, .obj, .glb")
-        return ply_path
-    return convert_mesh_format(exp_dir, output_format=output_format)
+#     ply_path = os.path.join(exp_dir, f"meshes_val_bg/lod0/mesh_00215000_gradio_lod0.ply")
+#     if output_format == ".ply":
+#         return ply_path
+#     if output_format not in [".obj", ".glb"]:
+#         print("Invalid output format, must be one of .ply, .obj, .glb")
+#         return ply_path
+#     return convert_mesh_format(exp_dir, output_format=output_format)
 
 # def gen_mesh_api(models, predictor, device,
 #                input_im, preprocess=True, scale=3, ddim_steps=75, stage2_steps=50):
@@ -569,12 +567,12 @@ def gen_8_views_api(models, predictor, device,
     stage1_dir = os.path.join(exp_dir, "stage1_8")
     os.makedirs(stage1_dir, exist_ok=True)
 
-    # stage 1: generate 4 views at the same elevation as the input
+    # stage 1: generate 8 views at the same elevation as the input
     output_ims = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(8)), device=device, ddim_steps=ddim_steps, scale=scale)
 
     torch.cuda.empty_cache()
     
-    return output_ims
+    return [output_ims[0], output_ims[1], output_ims[2], output_ims[3], output_ims[4], output_ims[5], output_ims[6], output_ims[7] ]
 
 def run_demo(
         device_idx=_GPU_INDEX,
@@ -712,7 +710,7 @@ def run_demo(
         gen_8_views_btn = gr.Button('Run API', variant='primary', visible=False)
         gen_8_views_btn.click(fn=partial(gen_8_views_api, models, predictor, device),
                             inputs=[image_block, elev_preprocess_chk], 
-                            outputs=[mesh_output], 
+                            outputs=[view_1, view_2, view_3, view_4, view_5, view_6, view_7, view_8], 
                             api_name='generate_8_views',
                             queue=True)
 
