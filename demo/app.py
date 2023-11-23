@@ -297,10 +297,10 @@ def stage1_run(models, device, cam_vis, tmp_dir,
         new_fig = cam_vis.update_figure()
 
         flag_lower_cam = elev_output <= 75
-        if flag_lower_cam:
-            output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(4,8)), device=device, ddim_steps=ddim_steps, scale=scale)
-        else:
-            output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(8,12)), device=device, ddim_steps=ddim_steps, scale=scale)
+        # if flag_lower_cam:
+        output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(4,8)), device=device, ddim_steps=ddim_steps, scale=scale)
+        # else:
+            # output_ims_2 = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(8,12)), device=device, ddim_steps=ddim_steps, scale=scale)
         torch.cuda.empty_cache()
         return (90-elev_output, new_fig, *output_ims, *output_ims_2)
     else:
