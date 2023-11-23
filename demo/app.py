@@ -441,15 +441,17 @@ def init_bbox(image):
 def gen_8_views_api(models, predictor, device,
                input_im, preprocess=True, scale=3, ddim_steps=75, stage2_steps=50):
     if preprocess:
-        input_im = preprocess_api(predictor, input_im)
+        input_im.thumbnail([512, 512], Image.Resampling.LANCZOS)
+        # check_results = nsfw_check(models, raw_im, device=predictor.device)
+        # if check_results:
+        #     return check_results
+        image_sam = sam_out_nosave(predictor, input_im.convert("RGB"))
+        input_256 = image_preprocess_nosave(image_sam, lower_contrast=False, rescale=True)
+        torch.cuda.empty_cache()
     model = models['turncam'].half()
-    # folder to save the stage 1 images
-    exp_dir = tempfile.TemporaryDirectory(dir=os.path.join(os.path.dirname(__file__), 'demo_tmp')).name
-    stage1_dir = os.path.join(exp_dir, "stage1_8")
-    os.makedirs(stage1_dir, exist_ok=True)
 
     # stage 1: generate 8 views at the same elevation as the input
-    output_ims = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(8)), device=device, ddim_steps=ddim_steps, scale=scale)
+    output_ims = predict_stage1_gradio(model, input_256, adjust_set=list(range(8)), device=device, ddim_steps=ddim_steps, scale=scale)
 
     torch.cuda.empty_cache()
     
