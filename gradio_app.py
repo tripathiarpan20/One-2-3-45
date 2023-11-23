@@ -709,7 +709,7 @@ def run_demo(
         
         gen_8_views_btn = gr.Button('Run API', variant='primary', visible=False)
         gen_8_views_btn.click(fn=partial(gen_8_views_api, models, predictor, device),
-                            inputs=[image_block, elev_preprocess_chk], 
+                            inputs=[image_block], 
                             outputs=[view_1, view_2, view_3, view_4, view_5, view_6, view_7, view_8], 
                             api_name='generate_8_views',
                             queue=True)

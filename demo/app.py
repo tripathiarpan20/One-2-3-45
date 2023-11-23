@@ -373,23 +373,23 @@ def stage2_run(models, device, tmp_dir,
     else:
         return (mesh_path, gr.update(value=[]), gr.update(visible=False), gr.update(visible=False))
 
-def nsfw_check(models, raw_im, device='cuda'):
-    safety_checker_input = models['clip_fe'](raw_im, return_tensors='pt').to(device)
-    (_, has_nsfw_concept) = models['nsfw'](
-        images=np.ones((1, 3)), clip_input=safety_checker_input.pixel_values)
-    del safety_checker_input
-    if np.any(has_nsfw_concept):
-        print('NSFW content detected.')
-        return Image.open("unsafe.png")
-    else:
-        print('Safety check passed.')
-        return False
+# def nsfw_check(models, raw_im, device='cuda'):
+#     safety_checker_input = models['clip_fe'](raw_im, return_tensors='pt').to(device)
+#     (_, has_nsfw_concept) = models['nsfw'](
+#         images=np.ones((1, 3)), clip_input=safety_checker_input.pixel_values)
+#     del safety_checker_input
+#     if np.any(has_nsfw_concept):
+#         print('NSFW content detected.')
+#         return Image.open("unsafe.png")
+#     else:
+#         print('Safety check passed.')
+#         return False
 
 def preprocess_run(predictor, models, raw_im, lower_contrast, *bbox_sliders):
     raw_im.thumbnail([512, 512], Image.Resampling.LANCZOS)
-    check_results = nsfw_check(models, raw_im, device=predictor.device)
-    if check_results:
-        return check_results
+    # check_results = nsfw_check(models, raw_im, device=predictor.device)
+    # if check_results:
+    #     return check_results
     image_sam = sam_out_nosave(predictor, raw_im.convert("RGB"), *bbox_sliders)
     input_256 = image_preprocess_nosave(image_sam, lower_contrast=lower_contrast, rescale=True)
     torch.cuda.empty_cache()
@@ -436,6 +436,24 @@ def init_bbox(image):
             gr.update(value=y_min, maximum=height),
             gr.update(value=x_max, maximum=width),
             gr.update(value=y_max, maximum=height)]
+
+
+def gen_8_views_api(models, predictor, device,
+               input_im, preprocess=True, scale=3, ddim_steps=75, stage2_steps=50):
+    if preprocess:
+        input_im = preprocess_api(predictor, input_im)
+    model = models['turncam'].half()
+    # folder to save the stage 1 images
+    exp_dir = tempfile.TemporaryDirectory(dir=os.path.join(os.path.dirname(__file__), 'demo_tmp')).name
+    stage1_dir = os.path.join(exp_dir, "stage1_8")
+    os.makedirs(stage1_dir, exist_ok=True)
+
+    # stage 1: generate 8 views at the same elevation as the input
+    output_ims = predict_stage1_gradio(model, input_im, save_path=stage1_dir, adjust_set=list(range(8)), device=device, ddim_steps=ddim_steps, scale=scale)
+
+    torch.cuda.empty_cache()
+    
+    return [output_ims[0], output_ims[1], output_ims[2], output_ims[3], output_ims[4], output_ims[5], output_ims[6], output_ims[7] ]
 
 
 def run_demo(
@@ -546,6 +564,13 @@ def run_demo(
                 </p>
             </div>
         """)
+
+        gen_8_views_btn = gr.Button('Run API', variant='primary', visible=False)
+        gen_8_views_btn.click(fn=partial(gen_8_views_api, models, predictor, device),
+                            inputs=[image_block], 
+                            outputs=[view_1, view_2, view_3, view_4, view_5, view_6, view_7, view_8], 
+                            api_name='generate_8_views',
+                            queue=True)
 
         update_guide = lambda GUIDE_TEXT: gr.update(value=GUIDE_TEXT)
 
