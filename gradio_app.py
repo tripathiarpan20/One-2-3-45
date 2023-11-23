@@ -16,7 +16,7 @@ if not is_local_run:
     os.environ["FORCE_CUDA"] = "1"
     subprocess.run(['pip', 'install', 'inplace_abn'])
     # FORCE_CUDA=1 pip install --no-cache-dir git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0
-    subprocess.run(['pip', 'install', '--no-cache-dir', 'git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0'])
+    # subprocess.run(['pip', 'install', '--no-cache-dir', 'git+https://github.com/mit-han-lab/torchsparse.git@v1.4.0'])
 
 import shutil
 import torch
@@ -382,23 +382,23 @@ def stage1_run(models, device, cam_vis, tmp_dir,
 #     else:
 #         return (mesh_path, gr.update(value=[]), gr.update(visible=False), gr.update(visible=False))
 
-def nsfw_check(models, raw_im, device='cuda'):
-    safety_checker_input = models['clip_fe'](raw_im, return_tensors='pt').to(device)
-    (_, has_nsfw_concept) = models['nsfw'](
-        images=np.ones((1, 3)), clip_input=safety_checker_input.pixel_values)
-    del safety_checker_input
-    if np.any(has_nsfw_concept):
-        print('NSFW content detected.')
-        return Image.open("unsafe.png")
-    else:
-        print('Safety check passed.')
-        return False
+# def nsfw_check(models, raw_im, device='cuda'):
+#     safety_checker_input = models['clip_fe'](raw_im, return_tensors='pt').to(device)
+#     (_, has_nsfw_concept) = models['nsfw'](
+#         images=np.ones((1, 3)), clip_input=safety_checker_input.pixel_values)
+#     del safety_checker_input
+#     if np.any(has_nsfw_concept):
+#         print('NSFW content detected.')
+#         return Image.open("unsafe.png")
+#     else:
+#         print('Safety check passed.')
+#         return False
 
 def preprocess_run(predictor, models, raw_im, preprocess, *bbox_sliders):
     raw_im.thumbnail([512, 512], Image.Resampling.LANCZOS)
-    check_results = nsfw_check(models, raw_im, device=predictor.device)
-    if check_results:
-        return check_results
+    # check_results = nsfw_check(models, raw_im, device=predictor.device)
+    # if check_results:
+    #     return check_results
     image_sam = sam_out_nosave(predictor, raw_im.convert("RGB"), *bbox_sliders)
     input_256 = image_preprocess_nosave(image_sam, lower_contrast=preprocess, rescale=True)
     torch.cuda.empty_cache()
@@ -574,7 +574,7 @@ def gen_8_views_api(models, predictor, device,
 
     torch.cuda.empty_cache()
     
-    return reconstruct(exp_dir)
+    return output_ims
 
 def run_demo(
         device_idx=_GPU_INDEX,
