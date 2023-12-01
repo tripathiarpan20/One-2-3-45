@@ -479,12 +479,12 @@ def bg_removal_api(models, predictor, device,
     x_max = int(x_nonzero[0].max())
     y_max = int(y_nonzero[0].max())
     image_sam = sam_out_nosave(predictor, input_im.convert("RGB"), x_min, y_min, x_max, y_max)
-    input_256 = image_preprocess_nosave(image_sam, lower_contrast=False, rescale=True)
+    # input_256 = image_preprocess_nosave(image_sam, lower_contrast=False, rescale=True)
     torch.cuda.empty_cache()
     # print('Reached last line bg_removal_api')
     # print(type(input_256))
 
-    return input_256
+    return image_sam
 
 
 def gen_8_views_api_no_preproc(models, predictor, device,
