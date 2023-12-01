@@ -5,6 +5,7 @@ import torch
 import fire
 import gradio as gr
 import numpy as np
+from einops import rearrange
 import cv2
 from PIL import Image
 import plotly.graph_objects as go
@@ -463,6 +464,7 @@ def gen_8_views_api(models, predictor, device,
     
     return [output_ims[0], output_ims[1], output_ims[2], output_ims[3], output_ims[4], output_ims[5], output_ims[6], output_ims[7] ]
 
+
 def bg_removal_api(models, predictor, device,
                input_im, scale=3, ddim_steps=75, stage2_steps=50):
    
@@ -477,9 +479,12 @@ def bg_removal_api(models, predictor, device,
     x_max = int(x_nonzero[0].max())
     y_max = int(y_nonzero[0].max())
     image_sam = sam_out_nosave(predictor, input_im.convert("RGB"), x_min, y_min, x_max, y_max)
+    input_256 = image_preprocess_nosave(image_sam, lower_contrast=False, rescale=True)
     torch.cuda.empty_cache()
-    
-    return [image_sam]
+    # print('Reached last line bg_removal_api')
+    # print(type(input_256))
+
+    return input_256
 
 
 def gen_8_views_api_no_preproc(models, predictor, device,
@@ -553,7 +558,7 @@ def run_demo(
             with gr.Column(scale=4):
                 with gr.Row():
                     bbox_block = gr.Image(type='pil', label="Bounding box", height=290, interactive=False)
-                    sam_block = gr.Image(type='pil', label="SAM output", interactive=False)
+                    sam_block = gr.Image(type='pil', image_mode='RGB', label="SAM output", interactive=False)
                 max_width = max_height = 256
                 with gr.Row():
                     x_min_slider = gr.Slider(label="X min", interactive=True, value=0, minimum=0, maximum=max_width, step=1)
