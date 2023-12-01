@@ -463,6 +463,38 @@ def gen_8_views_api(models, predictor, device,
     
     return [output_ims[0], output_ims[1], output_ims[2], output_ims[3], output_ims[4], output_ims[5], output_ims[6], output_ims[7] ]
 
+def bg_removal_api(models, predictor, device,
+               input_im, scale=3, ddim_steps=75, stage2_steps=50):
+   
+    input_im.thumbnail([512, 512], Image.Resampling.LANCZOS)
+    image_rem = input_im.convert('RGBA')
+    image_nobg = remove(image_rem, alpha_matting=True)
+    arr = np.asarray(image_nobg)[:,:,-1]
+    x_nonzero = np.nonzero(arr.sum(axis=0))
+    y_nonzero = np.nonzero(arr.sum(axis=1))
+    x_min = int(x_nonzero[0].min())
+    y_min = int(y_nonzero[0].min())
+    x_max = int(x_nonzero[0].max())
+    y_max = int(y_nonzero[0].max())
+    image_sam = sam_out_nosave(predictor, input_im.convert("RGB"), x_min, y_min, x_max, y_max)
+    torch.cuda.empty_cache()
+    
+    return image_sam
+
+
+def gen_8_views_api_no_preproc(models, predictor, device,
+               input_im, preprocess=False, scale=3, ddim_steps=75, stage2_steps=50):
+    input_256 = image_preprocess_nosave(input_im, lower_contrast=False, rescale=True)
+    torch.cuda.empty_cache()
+    model = models['turncam'].half()
+
+    # stage 1: generate 8 views at the same elevation as the input
+    output_ims = predict_stage1_gradio(model, input_256, adjust_set=list(range(8)), device=device, ddim_steps=ddim_steps, scale=scale)
+
+    torch.cuda.empty_cache()
+    
+    return [output_ims[0], output_ims[1], output_ims[2], output_ims[3], output_ims[4], output_ims[5], output_ims[6], output_ims[7] ]
+
 
 def run_demo(
         device_idx=_GPU_INDEX,
@@ -573,11 +605,25 @@ def run_demo(
             </div>
         """)
 
-        gen_8_views_btn = gr.Button('Run API', variant='primary', visible=False)
+        gen_8_views_btn = gr.Button('Run API 8 views', variant='primary', visible=False)
         gen_8_views_btn.click(fn=partial(gen_8_views_api, models, predictor, device),
                             inputs=[image_block], 
                             outputs=[view_1, view_2, view_3, view_4, view_5, view_6, view_7, view_8], 
                             api_name='generate_8_views',
+                            queue=True)
+        
+        gen_8_views_no_preproc_btn = gr.Button('Run API 8 views (no preproc)', variant='primary', visible=False)
+        gen_8_views_no_preproc_btn.click(fn=partial(gen_8_views_api_no_preproc, models, predictor, device),
+                            inputs=[image_block], 
+                            outputs=[view_1, view_2, view_3, view_4, view_5, view_6, view_7, view_8], 
+                            api_name='generate_8_views_no_preproc',
+                            queue=True)
+
+        bg_removal_btn = gr.Button('Run API bg removal', variant='primary', visible=False)
+        bg_removal_btn.click(fn=partial(bg_removal_api, models, predictor, device),
+                            inputs=[image_block], 
+                            outputs=[sam_block], 
+                            api_name='bg_removal',
                             queue=True)
 
         update_guide = lambda GUIDE_TEXT: gr.update(value=GUIDE_TEXT)
