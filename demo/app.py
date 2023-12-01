@@ -479,7 +479,7 @@ def bg_removal_api(models, predictor, device,
     image_sam = sam_out_nosave(predictor, input_im.convert("RGB"), x_min, y_min, x_max, y_max)
     torch.cuda.empty_cache()
     
-    return image_sam
+    return [image_sam]
 
 
 def gen_8_views_api_no_preproc(models, predictor, device,
@@ -708,7 +708,7 @@ def run_demo(
                             ).success(fn=partial(update_guide, _REGEN_2), outputs=[guide_text], queue=False)
 
 
-    demo.queue().launch(share=True, max_threads=80, server_port = 3000) # auth=("admin", os.environ['PASSWD'])
+    demo.queue().launch(share=True, max_threads=80) # auth=("admin", os.environ['PASSWD'])
 
 
 if __name__ == '__main__':
